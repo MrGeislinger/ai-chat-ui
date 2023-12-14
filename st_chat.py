@@ -11,10 +11,21 @@ new_chat_id = f'{time.time()}'
 MODEL_ROLE = 'ai'
 AI_AVATAR_ICON = '✨'
 
+# Create a data/ folder if it doesn't already exist
+try:
+    os.mkdir('data/')
+except:
+    # data/ folder already exists
+    pass
+
 # Sidebar allows a list of past chats
 with st.sidebar:
     st.write('# Past Chats')
-    past_chats: dict = joblib.load('past_chats.json')
+    # Load past chats (if available)
+    try:
+        past_chats: dict = joblib.load('data/past_chats_list')
+    except:
+        past_chats = {}
     if st.session_state.get('chat_id') is None:
         st.session_state.chat_id = st.selectbox(
             label='Pick a past chat',
@@ -71,7 +82,7 @@ if prompt := st.chat_input('Your message here...'):
         past_chats[st.session_state.chat_id] = (
             f'{chat_title}-{st.session_state.chat_id}'
         )
-    joblib.dump(past_chats, 'past_chats.json')
+    joblib.dump(past_chats, 'data/past_chats_list')
     # Display user message in chat message container
     with st.chat_message('user'):
         st.markdown(prompt)
