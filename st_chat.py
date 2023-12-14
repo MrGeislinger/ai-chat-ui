@@ -1,22 +1,27 @@
 import time
 import os
+import joblib
 import streamlit as st
 import google.generativeai as genai
 
 GOOGLE_API_KEY=os.environ.get('GOOGLE_API_KEY')
 genai.configure(api_key=GOOGLE_API_KEY)
-model = genai.GenerativeModel('gemini-pro')
 
 
 st.write('# Chat with AI')
 
 # Chat history (allows to ask multiple questions)
 if 'messages' not in st.session_state:
-    st.session_state.messages = []
-    st.session_state.gemini_history = []
-    print('new_cache made')
-
-chat = model.start_chat(
+    try:
+        st.session_state.messages = joblib.load('temp_st_messages')
+        st.session_state.gemini_history = joblib.load('temp_gemini_messages')
+        print('old cache')
+    except:
+        st.session_state.messages = []
+        st.session_state.gemini_history = []
+        print('new_cache made')
+    st.session_state.model = genai.GenerativeModel('gemini-pro')
+    st.session_state.chat = st.session_state.model.start_chat(
         history=st.session_state.gemini_history,
     )
 
@@ -40,7 +45,7 @@ if prompt := st.chat_input('Your message here...'):
     )
 
     ## Send message to AI
-    response = chat.send_message(
+    response = st.session_state.chat.send_message(
         prompt,
         stream=True,
     )
@@ -55,23 +60,23 @@ if prompt := st.chat_input('Your message here...'):
         # Streams in a chunk at a time
         for chunk in response:
             # Simulate stream of chunk
-            print(chunk.parts)
-            if chunk.parts:
-                # TODO: Chunk missing `text` if API stops mid-stream ("safety"?)
-                for ch in chunk.text.split(' '):
-                    full_response += ch + ' '
-                    time.sleep(0.05)
-                    # Rewrites with a cursor at end
-                    message_placeholder.write(full_response + '▌')
+            # TODO: Chunk missing `text` if API stops mid-stream ("safety"?)
+            for ch in chunk.text.split(' '):
+                full_response += ch + ' '
+                time.sleep(0.05)
+                # Rewrites with a cursor at end
+                message_placeholder.write(full_response + '▌')
         # Write full message with placeholder
         message_placeholder.write(full_response)
 
     # Add assistant response to chat history
     st.session_state.messages.append(
         dict(
-            role=chat.history[-1].role,
-            content=chat.history[-1].parts[0].text,
+            role=st.session_state.chat.history[-1].role,
+            content=st.session_state.chat.history[-1].parts[0].text,
         )
     )
-    # Save chat history to ask multiple questions
-    st.session_state.gemini_history = chat.history
+    st.session_state.gemini_history = st.session_state.chat.history
+    # Save to file
+    joblib.dump(st.session_state.messages, 'temp_st_messages')
+    joblib.dump(st.session_state.gemini_history, 'temp_gemini_messages')
