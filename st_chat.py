@@ -87,7 +87,6 @@ if prompt := st.chat_input('Your message here...'):
     # Display assistant response in chat message container
     with st.chat_message(
         name=model_role,
-        avatar='✨',
     ):
         message_placeholder = st.empty()
         full_response = ''
@@ -107,7 +106,6 @@ if prompt := st.chat_input('Your message here...'):
     # Add assistant response to chat history
     st.session_state.messages.append(
         dict(
-            # role=st.session_state.chat.history[-1].role,
             role=model_role,
             content=st.session_state.chat.history[-1].parts[0].text,
         )
