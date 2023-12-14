@@ -8,7 +8,8 @@ GOOGLE_API_KEY=os.environ.get('GOOGLE_API_KEY')
 genai.configure(api_key=GOOGLE_API_KEY)
 
 new_chat_id = f'{time.time()}'
-model_role = 'ai'
+MODEL_ROLE = 'ai'
+AI_AVATAR_ICON = '✨'
 
 # Sidebar allows a list of past chats
 with st.sidebar:
@@ -54,7 +55,10 @@ st.session_state.chat = st.session_state.model.start_chat(
 
 # Display chat messages from history on app rerun
 for message in st.session_state.messages:
-    with st.chat_message(message['role']):
+    with st.chat_message(
+        name=message['role'],
+        avatar=message.get('avatar'),
+    ):
         st.markdown(message['content'])
 
 
@@ -86,7 +90,8 @@ if prompt := st.chat_input('Your message here...'):
     )
     # Display assistant response in chat message container
     with st.chat_message(
-        name=model_role,
+        name=MODEL_ROLE,
+        avatar=AI_AVATAR_ICON,
     ):
         message_placeholder = st.empty()
         full_response = ''
@@ -106,8 +111,9 @@ if prompt := st.chat_input('Your message here...'):
     # Add assistant response to chat history
     st.session_state.messages.append(
         dict(
-            role=model_role,
+            role=MODEL_ROLE,
             content=st.session_state.chat.history[-1].parts[0].text,
+            avatar=AI_AVATAR_ICON,
         )
     )
     st.session_state.gemini_history = st.session_state.chat.history
