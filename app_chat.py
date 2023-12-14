@@ -18,14 +18,15 @@ except:
     # data/ folder already exists
     pass
 
+# Load past chats (if available)
+try:
+    past_chats: dict = joblib.load('data/past_chats_list')
+except:
+    past_chats = {}
+
 # Sidebar allows a list of past chats
 with st.sidebar:
     st.write('# Past Chats')
-    # Load past chats (if available)
-    try:
-        past_chats: dict = joblib.load('data/past_chats_list')
-    except:
-        past_chats = {}
     if st.session_state.get('chat_id') is None:
         st.session_state.chat_id = st.selectbox(
             label='Pick a past chat',
@@ -34,15 +35,17 @@ with st.sidebar:
             placeholder='_',
         )
     else:
+        # This will happen the first time AI response comes in
         st.session_state.chat_id = st.selectbox(
             label='Pick a past chat',
             options=[new_chat_id, st.session_state.chat_id] + list(past_chats.keys()),
             index=1,
-            format_func=lambda x: past_chats.get(x, 'New Chat'),
+            format_func=lambda x: past_chats.get(x, 'New Chat' if x != st.session_state.chat_id else st.session_state.chat_title),
             placeholder='_',
         )
     # Save new chats after a message has been sent to AI
-        
+    # TODO: Give user a chance to name chat
+    st.session_state.chat_title = f'ChatSession-{st.session_state.chat_id}'
 
 st.write('# Chat with AI')
 
@@ -77,12 +80,8 @@ for message in st.session_state.messages:
 if prompt := st.chat_input('Your message here...'):
     # Save this as a chat for later
     if st.session_state.chat_id not in past_chats.keys():
-        # TODO: Give user a chance to name chat
-        chat_title = f'NEW'
-        past_chats[st.session_state.chat_id] = (
-            f'{chat_title}-{st.session_state.chat_id}'
-        )
-    joblib.dump(past_chats, 'data/past_chats_list')
+        past_chats[st.session_state.chat_id] = st.session_state.chat_title
+        joblib.dump(past_chats, 'data/past_chats_list')
     # Display user message in chat message container
     with st.chat_message('user'):
         st.markdown(prompt)
@@ -93,7 +92,6 @@ if prompt := st.chat_input('Your message here...'):
             content=prompt,
         )
     )
-
     ## Send message to AI
     response = st.session_state.chat.send_message(
         prompt,
